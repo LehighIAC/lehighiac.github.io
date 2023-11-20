@@ -1,1 +1,0 @@
-# lehighiac.github.io
