@@ -170,6 +170,3 @@ else:
   result = data.degreeday.sum()/history
 
 st.write(f"Result: {result}")
-start = int(time.strftime(monHours[0], "%H"))
-end = int(time.strftime(monHours[1], "%H"))
-st.write(end - start)
