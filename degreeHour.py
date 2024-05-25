@@ -3,6 +3,7 @@ from streamlit_folium import st_folium
 import streamlit as st
 from datetime import time, timedelta, datetime
 from meteostat import Point, Daily, Hourly, units
+from geopy.geocoders import Nominatim
 
 def get_pos(lat, lng):
   return lat, lng
@@ -13,7 +14,7 @@ def calculation(mapData, mode, method, tempUnit, baseTemp, setbackTemp, history)
 
     if sign == 1 and baseTemp > setbackTemp:
       raise Exception("Setback temperature must be higher than base temperature")
-    if sign ==-1 and baseTemp < setbackTemp:
+    if sign == -1 and baseTemp < setbackTemp:
       raise Exception("Setback temperature must be lower than base temperature")
     # Set time range
     starttime = datetime(2023 - history, 1, 1)
@@ -54,8 +55,18 @@ def calculation(mapData, mode, method, tempUnit, baseTemp, setbackTemp, history)
   except Exception as e:
     st.warning(e)
 
+# Default Bethlehem, PA location coordinates
+lat = 40.62
+lon = -75.37
+# Check if address is valid
+address = st.sidebar.text_input("Enter Address", key="address", placeholder="City, State")
+geolocator = Nominatim(user_agent="degreeHour app")
+location = geolocator.geocode(address)
+if location is not None:
+  lat = location.latitude
+  lon = location.longitude
 # Loads map to show bethlehem, PA
-m = fl.Map(location=[40.62, -75.37], zoom_start=13)
+m = fl.Map(location=[lat, lon], zoom_start=13)
 # Adds a popup returning the latitude and longitude of the clicked location
 m.add_child(fl.LatLngPopup())
 # Variable to store last clicked location
@@ -102,7 +113,10 @@ with programInfo:
   # Storing schedule
   schedule = []
   for day in range(7):
-    schedule.append((int(time.strftime(hourly[day][0], "%H")), int(time.strftime(hourly[day][1], "%H"))))
+    # Checks for minute intervals
+    start = int(time.strftime(hourly[day][0], "%H")) + (float(time.strftime(hourly[day][0], "%M"))/60)
+    end = int(time.strftime(hourly[day][1], "%H")) + (float(time.strftime(hourly[day][1], "%M"))/60)
+    schedule.append((start, end))
 
   with dataCol:  
     mode = st.radio("Select mode", ("Cooling", "Heating"))
@@ -115,7 +129,7 @@ with programInfo:
     else:
       baseTemp = st.number_input("Enter Base Temp", 32, 212, 65)
       setbackTemp = st.number_input("Enter Setback Temp", 32, 212, 65)
-    history = st.number_input("History (Years)", 1, 6, 1)
+    history = st.number_input("History (Years)", 1, 5, 1)
     calculate = st.button("Calculate")
 
     if calculate:
